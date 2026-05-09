@@ -33,6 +33,11 @@ def test_registry_contains_all_expected_swarms():
         "geopolitical_analysis",
         "sci_fi_stories",
         "tiktok_stories",
+        "meeting_prep",
+        "proposals",
+        "marketing",
+        "people_ops",
+        "finance",
     }
     missing = expected - set(SWARMS)
     assert not missing, f"Registry missing expected slugs: {missing}"

@@ -68,6 +68,31 @@ def _tiktok_stories_factory(load_threads_callback=None) -> "Agency":
     return create_agency(load_threads_callback=load_threads_callback)
 
 
+def _meeting_prep_factory(load_threads_callback=None) -> "Agency":
+    from swarms.meeting_prep.swarm import create_agency
+    return create_agency(load_threads_callback=load_threads_callback)
+
+
+def _proposals_factory(load_threads_callback=None) -> "Agency":
+    from swarms.proposals.swarm import create_agency
+    return create_agency(load_threads_callback=load_threads_callback)
+
+
+def _marketing_factory(load_threads_callback=None) -> "Agency":
+    from swarms.marketing.swarm import create_agency
+    return create_agency(load_threads_callback=load_threads_callback)
+
+
+def _people_ops_factory(load_threads_callback=None) -> "Agency":
+    from swarms.people_ops.swarm import create_agency
+    return create_agency(load_threads_callback=load_threads_callback)
+
+
+def _finance_factory(load_threads_callback=None) -> "Agency":
+    from swarms.finance.swarm import create_agency
+    return create_agency(load_threads_callback=load_threads_callback)
+
+
 # Slug -> (factory, one-line description).
 # Slugs must match `[a-z0-9_-]+` since they appear in URL paths.
 SWARMS: dict[str, tuple[Callable, str]] = {
@@ -110,6 +135,26 @@ SWARMS: dict[str, tuple[Callable, str]] = {
     "tiktok_stories": (
         _tiktok_stories_factory,
         "Short-form vertical-video story scripts with hooks, storyboards, captions.",
+    ),
+    "meeting_prep": (
+        _meeting_prep_factory,
+        "Pre-meeting research, one-page brief, and question list.",
+    ),
+    "proposals": (
+        _proposals_factory,
+        "Business proposals: RFP responses, SOWs, pitches with pricing and compliance audit.",
+    ),
+    "marketing": (
+        _marketing_factory,
+        "Marketing content: positioning, voice, web copy, ads, email, SEO.",
+    ),
+    "people_ops": (
+        _people_ops_factory,
+        "Small-team HR: handbooks, scheduling, training plans, performance reviews. Sensitive data — local files only.",
+    ),
+    "finance": (
+        _finance_factory,
+        "Budgets, P&L, variance, projections. Math via IPython, not LLM. Sensitive data — local files only.",
     ),
 }
 
