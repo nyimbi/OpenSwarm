@@ -8,12 +8,12 @@ from dotenv import load_dotenv
 
 from config import get_default_model, is_openai_provider
 from swarms.softdev.shared_tools import ReadFile, ListDir
+from swarms._common.web_tools import WebSearch, WebFetch
 
 load_dotenv()
 
 
 def create_researcher() -> Agent:
-    from agency_swarm.tools import WebSearchTool
 
     return Agent(
         name="Researcher",
@@ -27,5 +27,5 @@ def create_researcher() -> Agent:
         model_settings=ModelSettings(
             reasoning=Reasoning(effort="medium", summary="auto") if is_openai_provider() else None,
         ),
-        tools=[ReadFile, ListDir, WebSearchTool()],
+        tools=[ReadFile, ListDir, WebSearch, WebFetch],
     )

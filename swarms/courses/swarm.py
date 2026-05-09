@@ -11,11 +11,12 @@ INSTRUCTIONS = Path(__file__).parent / "instructions"
 
 def create_agency(load_threads_callback=None) -> "Agency":
     from agency_swarm import Agency
-    from agency_swarm.tools import Handoff, SendMessage, WebSearchTool
+    from agency_swarm.tools import Handoff, SendMessage
 
     from orchestrator.tools import SwitchProvider, SwitchSwarm
     from swarms._common.agent_factory import make_agent
     from swarms._common.file_ops import ReadFile, WriteFile, EditFile, ListDir
+    from swarms._common.web_tools import WebSearch, WebFetch
 
     orch = make_agent(
         "Orchestrator",
@@ -27,14 +28,14 @@ def create_agency(load_threads_callback=None) -> "Agency":
         "CourseDesigner",
         "Plans the course: learning objectives, prerequisites, sequence, assessments.",
         INSTRUCTIONS,
-        tools=[ReadFile, WriteFile, ListDir, WebSearchTool()],
+        tools=[ReadFile, WriteFile, ListDir, WebSearch, WebFetch],
         reasoning="high",
     )
     lesson_writer = make_agent(
         "LessonWriter",
         "Writes individual lessons: explanations, worked examples, key takeaways.",
         INSTRUCTIONS,
-        tools=[ReadFile, WriteFile, EditFile, ListDir, WebSearchTool()],
+        tools=[ReadFile, WriteFile, EditFile, ListDir, WebSearch, WebFetch],
     )
     exercise_writer = make_agent(
         "ExerciseWriter",

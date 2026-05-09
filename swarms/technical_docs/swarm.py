@@ -11,11 +11,12 @@ INSTRUCTIONS = Path(__file__).parent / "instructions"
 
 def create_agency(load_threads_callback=None) -> "Agency":
     from agency_swarm import Agency
-    from agency_swarm.tools import Handoff, SendMessage, WebSearchTool
+    from agency_swarm.tools import Handoff, SendMessage
 
     from orchestrator.tools import SwitchProvider, SwitchSwarm
     from swarms._common.agent_factory import make_agent
     from swarms._common.file_ops import ReadFile, WriteFile, EditFile, ListDir
+    from swarms._common.web_tools import WebSearch, WebFetch
     from swarms.softdev.shared_tools import GitDiff
 
     orch = make_agent(
@@ -28,14 +29,14 @@ def create_agency(load_threads_callback=None) -> "Agency":
         "DocArchitect",
         "Plans documentation structure: TOC, audience, scope, depth.",
         INSTRUCTIONS,
-        tools=[ReadFile, WriteFile, ListDir, WebSearchTool()],
+        tools=[ReadFile, WriteFile, ListDir, WebSearch, WebFetch],
         reasoning="high",
     )
     writer = make_agent(
         "TechWriter",
         "Writes the actual prose: API refs, guides, tutorials, READMEs.",
         INSTRUCTIONS,
-        tools=[ReadFile, WriteFile, EditFile, ListDir, WebSearchTool()],
+        tools=[ReadFile, WriteFile, EditFile, ListDir, WebSearch, WebFetch],
     )
     editor = make_agent(
         "Editor",
