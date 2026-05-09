@@ -7,5 +7,6 @@ orchestrator/instructions.md for the documented carve-out.
 """
 
 from orchestrator.tools.SwitchProvider import SwitchProvider
+from orchestrator.tools.SwitchSwarm import SwitchSwarm
 
-__all__ = ["SwitchProvider"]
+__all__ = ["SwitchProvider", "SwitchSwarm"]

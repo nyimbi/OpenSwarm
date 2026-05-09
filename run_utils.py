@@ -254,7 +254,7 @@ def main() -> None:
     except Exception:
         pass
 
-    from swarm import create_agency
+    from swarm import get_active_agency_factory
 
     # User-scoped flag directory so a co-tenant on /tmp can't force a
     # spurious restart by touching our flag files (Linux/macOS DoS vector).
@@ -289,7 +289,7 @@ def main() -> None:
         print(build_integration_summary())
         print()
 
-        agency = create_agency()
+        agency = get_active_agency_factory()()
         agency.tui(show_reasoning=True, reload=False)
 
         if _saved_stderr_fd is not None:

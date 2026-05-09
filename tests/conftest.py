@@ -37,6 +37,16 @@ def _install_agency_swarm_stubs() -> None:
     if pkg is not None and getattr(pkg, "_openswarm_test_stub", False):
         return  # already installed
 
+    # If the real agency_swarm package is installed and importable, defer to
+    # it. Stubs would otherwise shadow `agency_swarm.tools` so subsequent
+    # `from agency_swarm.tools.<submodule> import ...` calls inside the real
+    # package break with "not a package" errors.
+    try:
+        import agency_swarm  # noqa: F401
+        return
+    except Exception:
+        pass
+
     pkg = types.ModuleType("agency_swarm")
     pkg._openswarm_test_stub = True  # type: ignore[attr-defined]
 
@@ -63,6 +73,20 @@ def _install_agency_swarm_stubs() -> None:
     pkg.ModelSettings = _ModelSettings  # type: ignore[attr-defined]
     pkg.LitellmModel = _LitellmModel  # type: ignore[attr-defined]
 
+    class _Agency:
+        """Minimal stub for tests that need to assert sub-agency dispatch."""
+
+        def __init__(self, *agents, **kwargs):
+            self.agents = agents
+            self.kwargs = kwargs
+
+        def get_response_sync(self, message, **kwargs):
+            class _Result:
+                final_output = f"[stub-agency] {message}"
+            return _Result()
+
+    pkg.Agency = _Agency  # type: ignore[attr-defined]
+
     tools = types.ModuleType("agency_swarm.tools")
 
     class _BaseTool(BaseModel):
@@ -70,6 +94,16 @@ def _install_agency_swarm_stubs() -> None:
             raise NotImplementedError
 
     tools.BaseTool = _BaseTool  # type: ignore[attr-defined]
+
+    # Tool classes used by various agents — stubbed as no-op classes since
+    # tests don't actually invoke them.
+    class _PassthroughTool:
+        pass
+
+    tools.PersistentShellTool = _PassthroughTool  # type: ignore[attr-defined]
+    tools.WebSearchTool = _PassthroughTool  # type: ignore[attr-defined]
+    tools.Handoff = _PassthroughTool  # type: ignore[attr-defined]
+    tools.SendMessage = _PassthroughTool  # type: ignore[attr-defined]
 
     sys.modules["agency_swarm"] = pkg
     sys.modules["agency_swarm.tools"] = tools

@@ -76,6 +76,19 @@ def create_agency(load_threads_callback=None):
 
     return agency
 
+def get_active_agency_factory():
+    """Return the factory for the swarm selected via OPENSWARM_SWARM.
+
+    Falls back to the registry's default ('metaswarm') when unset. This is
+    the indirection used by run_utils.main() and server.py so they don't
+    each have to know about the registry.
+    """
+    from swarms import default_slug, get_factory
+    slug = os.getenv("OPENSWARM_SWARM", default_slug()).strip().lower()
+    return get_factory(slug)
+
+
 if __name__ == "__main__":
-    agency = create_agency()
+    factory = get_active_agency_factory()
+    agency = factory()
     agency.tui(show_reasoning=True, reload=False)
