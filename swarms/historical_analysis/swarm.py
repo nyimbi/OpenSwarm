@@ -27,13 +27,13 @@ def create_agency(load_threads_callback=None) -> "Agency":
         "Researcher",
         "Gathers primary and secondary sources, period context, key actors.",
         INSTRUCTIONS,
-        tools=[ReadFile, WriteFile, ListDir, WebSearchTool],
+        tools=[ReadFile, WriteFile, ListDir, WebSearchTool()],
     )
     analyst = make_agent(
         "Analyst",
         "Interprets evidence: causation, patterns, competing accounts, biases.",
         INSTRUCTIONS,
-        tools=[ReadFile, WriteFile, ListDir, WebSearchTool],
+        tools=[ReadFile, WriteFile, ListDir, WebSearchTool()],
         reasoning="high",
     )
     synthesizer = make_agent(

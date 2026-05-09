@@ -20,6 +20,13 @@ logging.basicConfig(level=logging.INFO)
 
 from agency_swarm.integrations.fastapi import run_fastapi
 
+# Importing `swarm` triggers the runtime patches at the root of the repo
+# (dual_comms, utf8_file_reads, file_attachment_refs, ipython_composio).
+# Required before any swarm constructs an Agency — the dual-comms patch
+# in particular is what makes the orchestrator-to-many + all-to-all
+# topology work.
+import swarm  # noqa: F401
+
 from swarms import SWARMS
 
 

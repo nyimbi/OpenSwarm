@@ -27,5 +27,5 @@ def create_researcher() -> Agent:
         model_settings=ModelSettings(
             reasoning=Reasoning(effort="medium", summary="auto") if is_openai_provider() else None,
         ),
-        tools=[ReadFile, ListDir, WebSearchTool],
+        tools=[ReadFile, ListDir, WebSearchTool()],
     )

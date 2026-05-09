@@ -28,14 +28,14 @@ def create_agency(load_threads_callback=None) -> "Agency":
         "DocArchitect",
         "Plans documentation structure: TOC, audience, scope, depth.",
         INSTRUCTIONS,
-        tools=[ReadFile, WriteFile, ListDir, WebSearchTool],
+        tools=[ReadFile, WriteFile, ListDir, WebSearchTool()],
         reasoning="high",
     )
     writer = make_agent(
         "TechWriter",
         "Writes the actual prose: API refs, guides, tutorials, READMEs.",
         INSTRUCTIONS,
-        tools=[ReadFile, WriteFile, EditFile, ListDir, WebSearchTool],
+        tools=[ReadFile, WriteFile, EditFile, ListDir, WebSearchTool()],
     )
     editor = make_agent(
         "Editor",

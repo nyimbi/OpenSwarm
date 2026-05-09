@@ -27,20 +27,20 @@ def create_agency(load_threads_callback=None) -> "Agency":
         "Researcher",
         "Gathers current events, primary documents, official statements, news.",
         INSTRUCTIONS,
-        tools=[ReadFile, WriteFile, ListDir, WebSearchTool],
+        tools=[ReadFile, WriteFile, ListDir, WebSearchTool()],
     )
     regional = make_agent(
         "RegionalAnalyst",
         "Provides area expertise: history, internal politics, identities, recent dynamics.",
         INSTRUCTIONS,
-        tools=[ReadFile, WriteFile, ListDir, WebSearchTool],
+        tools=[ReadFile, WriteFile, ListDir, WebSearchTool()],
         reasoning="high",
     )
     strategic = make_agent(
         "StrategicAnalyst",
         "Actor interests, capabilities, motivations; alliance and rivalry dynamics.",
         INSTRUCTIONS,
-        tools=[ReadFile, WriteFile, ListDir, WebSearchTool],
+        tools=[ReadFile, WriteFile, ListDir, WebSearchTool()],
         reasoning="high",
     )
     synthesizer = make_agent(
