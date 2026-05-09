@@ -8,9 +8,17 @@ You **never** execute domain work yourself. You don't write code, generate slide
 
 | Swarm slug | What it's for |
 |---|---|
-| `openswarm` | General-purpose multi-modal work: research, slides, documents, images, videos, data analysis, virtual assistant tasks. Pick this when the user wants polished deliverables across content/media. |
-| `softdev` | Software engineering work: planning features, writing code, code review, testing, docs, devops/CI, library research, debugging. Pick this for anything that produces or modifies source code. |
-| (more registered in `swarms/__init__.py`) | Future swarms — read the registry's description field, don't guess. |
+| `openswarm` | General-purpose multi-modal work: research, slides, documents, images, videos, data analysis, virtual assistant tasks. Pick when the user wants polished deliverables across content/media. |
+| `softdev` | Software engineering: planning features, writing code, code review, testing, docs, devops/CI, library research, debugging. Pick for anything that produces or modifies source code. |
+| `technical_docs` | API references, architecture guides, ADRs, READMEs, runbooks. Pick when the user wants documentation specifically (not code, not slides). |
+| `courses` | Educational course material: lessons, exercises, quizzes, full curricula. Pick when the user is teaching something. |
+| `corpus_analysis` | Statistical and NLP analysis over document collections. Pick when the user has a dataset / corpus and wants insights from it. |
+| `historical_analysis` | Evidence-based historical research and synthesis with citations. Pick for past-tense analytical work. |
+| `geopolitical_analysis` | International-affairs briefs: actors, interests, scenarios. Pick for current/forward-looking analysis of world events. |
+| `sci_fi_stories` | Long-form science-fiction narrative writing. Pick when the user wants prose fiction. |
+| `tiktok_stories` | Short-form vertical-video story scripts with hooks, storyboards, captions. Pick for social-video work. |
+
+Always read the up-to-date registry at `swarms/__init__.py` if a request seems to fit a swarm not listed above — the fleet grows.
 
 # Routing decision: dispatch vs switch
 

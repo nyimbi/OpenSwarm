@@ -33,6 +33,41 @@ def _metaswarm_factory(load_threads_callback=None) -> "Agency":
     return create_agency(load_threads_callback=load_threads_callback)
 
 
+def _technical_docs_factory(load_threads_callback=None) -> "Agency":
+    from swarms.technical_docs.swarm import create_agency
+    return create_agency(load_threads_callback=load_threads_callback)
+
+
+def _courses_factory(load_threads_callback=None) -> "Agency":
+    from swarms.courses.swarm import create_agency
+    return create_agency(load_threads_callback=load_threads_callback)
+
+
+def _corpus_analysis_factory(load_threads_callback=None) -> "Agency":
+    from swarms.corpus_analysis.swarm import create_agency
+    return create_agency(load_threads_callback=load_threads_callback)
+
+
+def _historical_analysis_factory(load_threads_callback=None) -> "Agency":
+    from swarms.historical_analysis.swarm import create_agency
+    return create_agency(load_threads_callback=load_threads_callback)
+
+
+def _geopolitical_analysis_factory(load_threads_callback=None) -> "Agency":
+    from swarms.geopolitical_analysis.swarm import create_agency
+    return create_agency(load_threads_callback=load_threads_callback)
+
+
+def _sci_fi_stories_factory(load_threads_callback=None) -> "Agency":
+    from swarms.sci_fi_stories.swarm import create_agency
+    return create_agency(load_threads_callback=load_threads_callback)
+
+
+def _tiktok_stories_factory(load_threads_callback=None) -> "Agency":
+    from swarms.tiktok_stories.swarm import create_agency
+    return create_agency(load_threads_callback=load_threads_callback)
+
+
 # Slug -> (factory, one-line description).
 # Slugs must match `[a-z0-9_-]+` since they appear in URL paths.
 SWARMS: dict[str, tuple[Callable, str]] = {
@@ -46,7 +81,35 @@ SWARMS: dict[str, tuple[Callable, str]] = {
     ),
     "softdev": (
         _softdev_factory,
-        "Software development swarm: architect, coder, reviewer, tester, doc writer, researcher, devops.",
+        "Software development: architect, coder, reviewer, tester, doc writer, researcher, devops.",
+    ),
+    "technical_docs": (
+        _technical_docs_factory,
+        "Technical documentation: API references, architecture guides, ADRs, READMEs, runbooks.",
+    ),
+    "courses": (
+        _courses_factory,
+        "Educational course material: lessons, exercises, quizzes, assessments.",
+    ),
+    "corpus_analysis": (
+        _corpus_analysis_factory,
+        "Text and statistical analysis over document collections.",
+    ),
+    "historical_analysis": (
+        _historical_analysis_factory,
+        "Evidence-based historical research and synthesis with citations.",
+    ),
+    "geopolitical_analysis": (
+        _geopolitical_analysis_factory,
+        "International-affairs briefs: situation, actors, drivers, scenarios.",
+    ),
+    "sci_fi_stories": (
+        _sci_fi_stories_factory,
+        "Science-fiction narrative writing: worldbuilding, plot, prose, editing.",
+    ),
+    "tiktok_stories": (
+        _tiktok_stories_factory,
+        "Short-form vertical-video story scripts with hooks, storyboards, captions.",
     ),
 }
 

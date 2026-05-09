@@ -19,10 +19,23 @@ from pydantic import ValidationError
 
 # ── Registry shape ─────────────────────────────────────────────────────────
 
-def test_registry_has_three_swarms():
+def test_registry_contains_all_expected_swarms():
     from swarms import SWARMS
 
-    assert set(SWARMS) == {"metaswarm", "openswarm", "softdev"}
+    expected = {
+        "metaswarm",
+        "openswarm",
+        "softdev",
+        "technical_docs",
+        "courses",
+        "corpus_analysis",
+        "historical_analysis",
+        "geopolitical_analysis",
+        "sci_fi_stories",
+        "tiktok_stories",
+    }
+    missing = expected - set(SWARMS)
+    assert not missing, f"Registry missing expected slugs: {missing}"
 
 
 def test_each_entry_is_factory_plus_description():
