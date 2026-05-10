@@ -36,6 +36,14 @@ def make_agent(
     slug = "".join(c for c in name.lower() if c.isalnum() or c == "_")
     instructions_path = instructions_dir / f"{slug}.md"
 
+    # H7: eager validation. A missing instruction file would otherwise be
+    # accepted silently and the agent would run with no system prompt.
+    if not instructions_path.is_file():
+        raise FileNotFoundError(
+            f"Agent '{name}' has no instructions file at {instructions_path}. "
+            f"Expected slug: '{slug}.md' under {instructions_dir}."
+        )
+
     return Agent(
         name=name,
         description=description,
