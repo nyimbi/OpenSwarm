@@ -187,5 +187,5 @@ third_party/
 .omc/
 
 # Smoke-test scaffolding (never commit)
-.smoke_e2e.py
+.smoke_*.py
 .venv-smoketest/

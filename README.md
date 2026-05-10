@@ -1,186 +1,216 @@
-<div align="center">
+# OpenSwarm — personal multi-swarm fork
 
-# 🚀 OpenSwarm
+A fork of [VRSEN/OpenSwarm](https://github.com/VRSEN/openswarm) built around three changes that mattered for a small business owning its own infrastructure:
 
-![OpenSwarm](assets/new-framework.jpg)
-
-</div>
-
-**The fully open-source multi-agent system that does everything Claude Code can't.**
-
-Create polished slide decks, research reports, data visualizations, documents, images, and videos — all from a single prompt in your terminal. No platform, no UI, no setup hassles.
-
-✨ **One prompt → Complete deliverables**<br>
-🎯 **8 specialized agents working together**<br>
-⚡ **Install in 30 seconds, running in 60**<br>
-🔧 **100% customizable and forkable**<br>
-
-Built on [Agency Swarm](https://github.com/VRSEN/agency-swarm) — the framework powering real AI swarms.<br>
-
-<a href="https://www.producthunt.com/products/openswarm?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-openswarm" target="_blank" rel="noopener noreferrer"><img alt="OpenSwarm - Claude Code for everything except coding | Product Hunt" width="200" height="43" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1141784&amp;theme=light&amp;t=1778266049404"></a>
-
----
-
-> 💼 **Investor or looking to integrate AI agents into your SaaS?**
-> We're the team behind OpenSwarm and Agency Swarm, building the future of multi-agent systems.
-> **[Partner with us →](https://vrsen-ai.notion.site/fee2d391a8d74b24baa04a0b648af83c?pvs=105)**
-
----
-
-## 💡 What Makes This Different?
-
-Instead of one agent trying to do everything poorly, you get **specialists coordinated by an orchestrator**.
-
-### 🎯 Real Examples
-
-Paste these into your terminal and watch magic happen:
-
-- **"Create a complete investor pitch for OpenSwarm"** → Full deck + executive summary + market research
-- **"Research my top 5 competitors and write 3 SEO-optimized blog posts"** → Competitive analysis + keyword research + publish-ready content
-- **"Analyze this data and create a quarterly report with charts"** → Data insights + visualizations + formatted document
-- **"Generate a product launch video with animations"** → Professional video with graphics and transitions
-- **"Build me a marketing campaign for Q2"** → Strategy doc + creative assets + implementation timeline
-
-Connect to 10,000+ external services (Gmail, Slack, GitHub, HubSpot) via Composio for even more power.
-
----
-
-## 🤖 Meet Your AI Team
-
-| Agent                      | What it does                                                                                                                                                                                 |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Orchestrator**           | Routes every user request to the right specialist(s). Never answers directly — pure coordination.                                                                                            |
-| **Virtual Assistant**      | Handles everyday tasks: writing, scheduling, messaging, task management. Gains 10,000+ external integrations via [Composio](https://composio.dev) (Gmail, Slack, GitHub, HubSpot, and more). |
-| **Deep Research**          | Conducts comprehensive, evidence-based web research with citations and balanced analysis.                                                                                                    |
-| **Data Analyst**           | Analyses structured data, builds charts, runs statistical models — all inside an isolated IPython kernel.                                                                                    |
-| **Slides Agent**           | Generates complete, visually polished HTML slide decks, then exports them to PPTX.                                                                                                           |
-| **Docs Agent**             | Creates formatted Word documents and PDFs from outlines or raw content.                                                                                                                      |
-| **Image Generation Agent** | Generates and edits images using Gemini 2.5 Flash Image / Gemini 3 Pro Image and fal.ai.                                                                                                     |
-| **Video Generation Agent** | Produces videos via Sora (OpenAI), Veo (Google), and Seedance (fal.ai); also edits and combines clips.                                                                                       |
-
----
-
-## 📦 Get Started in 30 Seconds
-
-**For most users (recommended):**
+- **15 specialized swarms** (78 agents total) — from software engineering to meeting prep to finance — instead of one general-purpose team.
+- **7 LLM providers** with runtime switching (Azure OpenAI, Azure AI Foundry/Claude, Anthropic, Google, OpenAI, Ollama local, OpenAI-compatible).
+- **Self-hosted search and scraping** wired in (SearXNG + Firecrawl) — works on every provider, not just OpenAI's hosted Responses API.
 
 ```bash
-npm install -g @vrsen/openswarm
-openswarm
-```
-
-That's it! The setup wizard handles everything: authentication, dependencies, and configuration.
-
-**Requirements:** Node.js 20+ (Python 3.10+ auto-installed)
-
-## 🔧 Build Your Own Swarm
-
-Fork this repo and create your own specialized AI team in minutes:
-
-```bash
-git clone https://github.com/VRSEN/openswarm.git
-cd openswarm
-```
-
-Then tell **Claude Code**, **Cursor**, or **Codex**:
-
-> _"Turn this into an SEO optimization swarm"_
-
-They'll automatically customize all agents for your use case.
-
-**Popular custom swarms:**
-
-- **SEO Swarm:** Keyword research + competitor analysis + blog writing
-- **Sales Swarm:** Lead research + outreach + proposal generation
-- **Marketing Swarm:** Campaign planning + creative assets + analytics
-- **Product Swarm:** Market research + feature specs + launch materials
-
-## ⚙️ API Keys & Setup
-
-The setup wizard walks you through everything, but you'll need at least one of these.
-
-**Pick a primary provider (one required):**
-
-- `OPENAI_API_KEY` — GPT 5.x and Sora video generation
-- `ANTHROPIC_API_KEY` — Claude models
-- `GOOGLE_API_KEY` — Gemini models (also drives image gen + Veo video)
-- **Azure OpenAI Service** — `AZURE_API_KEY` + `AZURE_API_BASE` + `AZURE_API_VERSION` for your own GPT deployment
-- **Azure AI Foundry** — `AZURE_AI_API_KEY` + `AZURE_AI_API_BASE` for the catalog (Claude on Azure, Llama, Mistral, DeepSeek, ...)
-- **Ollama (local)** — no key required; defaults to `http://localhost:11434`
-- **OpenAI-compatible** — `OPENAI_COMPAT_API_KEY` + `OPENAI_COMPAT_API_BASE` for Ollama Cloud, Groq, Together AI, Mistral La Plateforme, OpenRouter, vLLM
-
-Switching providers mid-session: ask the orchestrator "switch to ollama llama3.1" (or any other slug + model) — it routes to the `SwitchProvider` tool, writes the new `DEFAULT_MODEL` to `.env`, and on next TUI exit OpenSwarm restarts with the new provider.
-
-**Optional superpowers:**
-
-- `COMPOSIO_API_KEY` — Unlock 10,000+ integrations (Gmail, Slack, GitHub, etc.)
-- `FAL_KEY` — Advanced video editing and effects
-- `SEARCH_API_KEY` — Web search for research agent
-
-Tools gracefully degrade when keys are missing — you'll get clear instructions on what to add.
-
-### Upgrading from an earlier version
-
-If you already have a `.env` from before the multi-provider work, nothing breaks. Existing `DEFAULT_MODEL` values keep working: bare strings like `gpt-5.2` route to OpenAI directly, and `litellm/<model>` strings still route through LiteLLM. The wizard adds new variables for Azure, Ollama, and OpenAI-compatible setups; old keys stay in place. Re-run `python onboard.py` whenever you want to register a new provider.
-
----
-
-## 🚀 Coming Soon
-
-- **Agent Builder Agent** - Create custom swarms from a single prompt
-- **OpenClaw + Claude Code integration** - All agents in one place
-
-⭐ **Star us on GitHub** to stay updated and help us prioritize features!
-
-## 🏗️ For Developers
-
-**Local development:**
-
-```bash
-git clone https://github.com/VRSEN/openswarm.git
-cd openswarm
-python swarm.py
-```
-
-**Docker deployment:**
-
-```bash
-git clone https://github.com/VRSEN/openswarm.git
-cd openswarm
-cp .env.example .env        # Add your API keys
-docker-compose up --build
-```
-
-**API server:**
-
-```bash
-python server.py           # Runs on localhost:8080
+oswarm                    # default swarm (metaswarm router)
+oswarm meeting_prep       # specific swarm
+oswarm proposals
+oswarm list               # see all 15
+oswarm server             # FastAPI on :8080 — every swarm at its own URL
 ```
 
 ---
 
-## 📺 Learn More
+## Quick start
 
-- **Watch the full demo:** [YouTube video →](https://youtu.be/c5DdXzqaeVU?si=rM2CNaZ8qVwMvqmz)
-- **Multi-agent framework:** [Agency Swarm](https://github.com/VRSEN/agency-swarm)
-- **Terminal UI for Agency Swarm:** [AgentSwarm](https://github.com/VRSEN/agentswarm-cli) (OpenCode-based TUI)
-- **External integrations:** [Composio](https://composio.dev)
+```bash
+git clone https://github.com/nyimbi/OpenSwarm.git
+cd OpenSwarm
 
-## Star History
+# One-time install: bootstrap deps + symlink launcher
+python swarm.py            # first run pulls deps via uv
+ln -sf "$(pwd)/bin/oswarm" ~/.local/bin/oswarm
 
-[![Star History Chart](https://api.star-history.com/svg?repos=VRSEN/OpenSwarm&type=date&legend=top-left)](https://www.star-history.com/#VRSEN/OpenSwarm&type=date&legend=top-left)
+# Configure provider + (optional) connectors infra
+cp .env.example .env       # fill in keys
+# OR rely on ~/.config/secrets/api_keys.env — oswarm sources it automatically
+```
+
+Then `oswarm` is available system-wide.
 
 ---
 
-## 👥 Team
+## The fleet
 
-- **Artemii Shatokhin** — Built the core OpenSwarm agent team: the specialist agents, orchestration layer, shared tools, and runtime integrations. ([GitHub](https://github.com/ArtemShatokhin))
-- **Nick Bobrowski** — Built the foundation OpenSwarm builds on: Agency Swarm and the AgentSwarm CLI/TUI, an OpenCode-based terminal experience customized for Agency Swarm. ([GitHub](https://github.com/nicko-ai))
+15 swarms, picked at startup via env var or by talking to the MetaSwarm router. Sensitive-data swarms (`people_ops`, `finance`) have hard data-policy rules in their instructions — outputs land in local files only, no private data ever reaches external services.
+
+| Slug | Agents | What it does |
+|---|---|---|
+| `metaswarm` | 1 | Front-door router. Pick this when starting fresh. Dispatches to specialists or migrates the session. |
+| `openswarm` | 8 | Original general-purpose team: research, slides, docs, images, video, data analysis, virtual assistant. |
+| `softdev` | 8 | Software engineering: architect, coder, reviewer, tester, docs, researcher, devops. |
+| `technical_docs` | 4 | API references, architecture guides, ADRs, READMEs, runbooks. |
+| `courses` | 5 | Lessons, exercises, quizzes — full educational content. |
+| `corpus_analysis` | 5 | Text + statistical analysis over document collections. IPython for the math. |
+| `historical_analysis` | 4 | Evidence-based historical research with citations. |
+| `geopolitical_analysis` | 5 | International-affairs briefs: situation, actors, drivers, scenarios. |
+| `sci_fi_stories` | 4 | Long-form science-fiction narrative writing. |
+| `tiktok_stories` | 5 | Short-form vertical-video story scripts with hooks, storyboards, captions. |
+| `meeting_prep` | 4 | Pre-meeting research, one-page brief, question list. |
+| `proposals` | 6 | RFP responses, SOWs, pitches with pricing and compliance audit. |
+| `marketing` | 5 | Web copy, ads, email, SEO. Carries brand voice across pieces. |
+| `people_ops` | 5 | Small-team HR: handbooks, scheduling, training, performance. **Sensitive data — local files only.** |
+| `finance` | 5 | Budgets, P&L, variance, projections. Math via IPython, not LLM. **Sensitive data — local files only.** |
+
+Run `oswarm list` to see the live registry.
 
 ---
 
-## 📄 License
+## Providers
 
-MIT — see [LICENSE](LICENSE).
+Every swarm runs on any provider. Switch at runtime by talking to the orchestrator:
 
-**Built with ❤️ by the team behind [Agency Swarm](https://github.com/VRSEN/agency-swarm)**
+> "switch to ollama llama3.1"
+> "switch to azure_ai claude-opus-4-1"
+> "use Claude"
+
+| Provider | `DEFAULT_MODEL` | Required env |
+|---|---|---|
+| OpenAI | `gpt-5.2` (or any OpenAI model id) | `OPENAI_API_KEY` |
+| Anthropic | `litellm/claude-sonnet-4-6` | `ANTHROPIC_API_KEY` |
+| Google Gemini | `litellm/gemini/gemini-3-flash` | `GOOGLE_API_KEY` |
+| Azure OpenAI Service | `azure/<deployment>` | `AZURE_API_KEY`, `AZURE_API_BASE`, `AZURE_API_VERSION` |
+| Azure AI Foundry (Claude on Azure, Llama, Mistral) | `azure_ai/<model>` | `AZURE_AI_API_KEY`, `AZURE_AI_API_BASE` (note: Anthropic models need `/anthropic` URL suffix) |
+| Ollama (local) | `ollama_chat/<model>` | `OLLAMA_API_BASE` (defaults to `http://localhost:11434`) |
+| OpenAI-compatible (Ollama Cloud, Groq, Together, Mistral, OpenRouter, vLLM) | `openai_compat/<model>` | `OPENAI_COMPAT_API_KEY`, `OPENAI_COMPAT_API_BASE` |
+
+The orchestrator's `SwitchProvider` tool writes to `.env` and reloads in-process — works on both the TUI and the FastAPI surface (per-request agency rebuild picks up the change automatically).
+
+---
+
+## How to use it
+
+### Interactive (TUI)
+
+```bash
+oswarm meeting_prep
+> I have a 45-min call tomorrow with the procurement officer at WFP Nairobi.
+  Prep me — research, brief, questions.
+```
+
+The orchestrator routes work to the right specialists. Output files land in `mnt/<swarm>/...` per the agent instructions.
+
+Switch swarms mid-session by saying so:
+
+> "switch to softdev"
+
+The orchestrator calls `SwitchSwarm`, you `/quit`, and the TUI restarts on the new swarm.
+
+### API (FastAPI)
+
+```bash
+oswarm server   # all 15 swarms at http://localhost:8080/<slug>/
+```
+
+Each swarm has its own URL path. Provider switching from the API surface is a tool call inside a request — agency-swarm rebuilds the agency on every request, so the next call picks up the new provider with no server restart.
+
+### Programmatic
+
+```python
+from swarms import get_factory
+agency = get_factory("proposals")()
+result = agency.get_response_sync("Write me an RFP response for ...")
+print(result.final_output)
+```
+
+---
+
+## Personal infrastructure
+
+The fork integrates with self-hosted services on a connectors server (your own infra — see `~/src/pjs/infra/docs/search_crawl/infra-search.md` for the topology):
+
+- **SearXNG** at `:8888` — privacy-respecting metasearch over Google/Bing/DuckDuckGo/Brave/Wikipedia. Wraps as the `WebSearch` tool.
+- **Firecrawl** at `:3002` — JS-rendered scraping with stealth anti-detection. Wraps as the `WebFetch` tool.
+
+Configure with:
+
+```bash
+SEARXNG_URL=http://your-host:8888
+FIRECRAWL_URL=http://your-host:3002
+```
+
+Both default to `localhost` ports if you self-host on the same machine. The `oswarm` launcher pre-fills the connectors-server URLs from the user's `~/.config/secrets/api_keys.env`.
+
+---
+
+## Sensitive data discipline
+
+The `people_ops` and `finance` swarms handle private business data — employee records, performance, compensation, P&L figures. Their `shared_instructions.md` enforces three rules:
+
+1. **Never include private data in queries to external services** (WebSearch, WebFetch, etc.).
+2. **Outputs containing private data go to local files only** under `mnt/<swarm>/private/`.
+3. **When uncertain whether something is sensitive, treat it as sensitive.**
+
+The `finance` swarm goes further — its agents don't have web tools at all, closing off the data-leak vector at construction time rather than relying on instructions alone.
+
+---
+
+## Architecture
+
+- **`swarms/__init__.py`** is the single source of truth. Each entry maps a slug → factory + description.
+- **Each swarm is a folder** under `swarms/<slug>/` with a `swarm.py` factory, `shared_instructions.md` for cross-agent rules, and `instructions/<agent>.md` for per-agent system prompts.
+- **The MetaSwarm orchestrator** (in `swarms/metaswarm/`) has two delegation tools:
+  - `DispatchToSwarm(swarm, task)` — runs a sub-swarm to completion and returns the result (subroutine-style).
+  - `SwitchSwarm(swarm)` — migrates the user's whole session to a different swarm.
+- **The orchestrator's "router only" contract** is preserved across all swarms, with two documented carve-outs: `SwitchProvider` (provider switching) and `SwitchSwarm` (swarm switching). All other work is delegated to specialists.
+- **Patches at `patches/`** monkey-patch agency-swarm to support the dual `SendMessage` + `Handoff` topology, UTF-8 instruction reads, FastAPI file-attachment paths, and IPython kernel context bootstrapping. Loaded automatically by `swarm.py` and the launcher.
+
+Adding a new swarm is one entry in the registry plus a folder. See `swarms/meeting_prep/` for the smallest reference example (4 agents, ~9 files).
+
+---
+
+## Repo structure
+
+```
+openswarm/
+├── bin/
+│   ├── oswarm                      ← personal launcher (this fork)
+│   └── openswarm                   ← original npm CLI (upstream binary)
+├── swarms/
+│   ├── __init__.py                  ← registry
+│   ├── _common/                     ← shared tools across swarms
+│   │   ├── agent_factory.py
+│   │   ├── file_ops.py
+│   │   └── web_tools/               ← WebSearch + WebFetch
+│   ├── metaswarm/
+│   ├── openswarm.py                 ← wraps the original create_agency
+│   ├── softdev/
+│   └── ... (12 more)
+├── orchestrator/                    ← original OpenSwarm orchestrator (root-level)
+├── shared_instructions.md
+├── tests/                            ← 61 unit + 12 web + 4 live tests
+├── patches/                          ← agency-swarm runtime patches
+├── swarm.py                         ← TUI entry point
+└── server.py                        ← FastAPI entry point
+```
+
+Original 8-agent OpenSwarm lives at the repo root unchanged. New swarms live under `swarms/`. The registry in `swarms/__init__.py` knows about both.
+
+---
+
+## Tests
+
+```bash
+pytest                  # 61 unit + auto-skip live tests when keys absent
+pytest -m live          # only live tests (need real provider keys)
+pytest -m "not live"    # only unit tests (CI-friendly)
+```
+
+Live tests live in `tests/test_live_providers.py` (Ollama + Azure round-trips) and `tests/test_web_tools.py` (real SearXNG + Firecrawl). They opt-in via env vars and skip cleanly when the relevant infra isn't reachable.
+
+---
+
+## Credit
+
+Built on [VRSEN/OpenSwarm](https://github.com/VRSEN/openswarm), itself built on [Agency Swarm](https://github.com/VRSEN/agency-swarm) and the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python). The original OpenSwarm provided the eight specialist agents, the agency-swarm framework integrations, and the runtime patches that make the dual-comms topology work.
+
+---
+
+## License
+
+MIT — same as upstream. See [LICENSE](LICENSE).

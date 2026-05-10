@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# oswarm — personal launcher for the local OpenSwarm fork.
+#
+# Sources secrets, bridges shell env-var conventions (AZURE_OPENAI_*) to
+# OpenSwarm's LiteLLM-style names (AZURE_*), points web tools at the
+# connectors server, and runs swarm.py / server.py from the repo root.
+#
+# Symlinked to ~/.local/bin/oswarm so it works from any directory.
+#
+# Usage:
+#   oswarm                       launch default swarm (metaswarm)
+#   oswarm <slug>                launch a specific swarm
+#   oswarm list                  list registered swarms with descriptions
+#   oswarm server                FastAPI mode (every swarm at its own URL)
+#   oswarm help                  show this usage
+
+set -euo pipefail
+
+# Resolve the repo root from the script's actual location (not $PWD,
+# which could be anywhere when invoked through the symlink).
+SCRIPT="${BASH_SOURCE[0]}"
+while [ -L "$SCRIPT" ]; do
+  SCRIPT="$(readlink "$SCRIPT")"
+done
+REPO_ROOT="$(cd "$(dirname "$SCRIPT")/.." && pwd)"
+
+cd "$REPO_ROOT"
+
+# 1. Source secrets if present
+SECRETS="${HOME}/.config/secrets/api_keys.env"
+if [[ -f "$SECRETS" ]]; then
+  # shellcheck disable=SC1090
+  source "$SECRETS"
+fi
+
+# 2. Bridge env-var naming conventions
+[[ -n "${AZURE_OPENAI_API_KEY:-}" ]]     && export AZURE_API_KEY="$AZURE_OPENAI_API_KEY"
+[[ -n "${AZURE_OPENAI_BASE_URL:-}" ]]    && export AZURE_API_BASE="${AZURE_OPENAI_BASE_URL%/}"
+[[ -n "${AZURE_OPENAI_API_VERSION:-}" ]] && export AZURE_API_VERSION="$AZURE_OPENAI_API_VERSION"
+
+# Anthropic-on-Foundry: build the /anthropic endpoint from the resource name
+if [[ -n "${ANTHROPIC_FOUNDRY_API_KEY:-}" && -n "${ANTHROPIC_FOUNDRY_RESOURCE:-}" ]]; then
+  export AZURE_AI_API_KEY="$ANTHROPIC_FOUNDRY_API_KEY"
+  export AZURE_AI_API_BASE="https://${ANTHROPIC_FOUNDRY_RESOURCE}.services.ai.azure.com/anthropic"
+fi
+
+# Default model (override via DEFAULT_MODEL env or in-session SwitchProvider)
+export DEFAULT_MODEL="${DEFAULT_MODEL:-azure/gpt-4o}"
+
+# Connectors server (SearXNG + Firecrawl) for WebSearch + WebFetch tools
+export SEARXNG_URL="${SEARXNG_URL:-http://84.247.181.100:8888}"
+export FIRECRAWL_URL="${FIRECRAWL_URL:-http://84.247.181.100:3002}"
+
+# 3. Dispatch
+ARG="${1:-}"
+case "$ARG" in
+  help|--help|-h)
+    sed -n '2,15p' "$SCRIPT"
+    ;;
+  server)
+    echo "Launching FastAPI on :8080. All swarms exposed at /<slug>/..."
+    exec python server.py
+    ;;
+  list|ls)
+    python -c "from swarms import SWARMS; [print(f'  {s:25s} {d}') for s, (_,d) in SWARMS.items()]"
+    ;;
+  "")
+    echo "Launching default swarm (metaswarm). Provider: $DEFAULT_MODEL"
+    exec python swarm.py
+    ;;
+  *)
+    export OPENSWARM_SWARM="$ARG"
+    echo "Launching swarm: $ARG. Provider: $DEFAULT_MODEL"
+    exec python swarm.py
+    ;;
+esac
