@@ -39,17 +39,14 @@ def create_agency(load_threads_callback=None) -> "Agency":
         create_devops(),
     ]
 
+    from swarms._common.comms import build_handoff_flows
+
     send_message_flows = [
         (orchestrator, specialist, SendMessage)
         for specialist in agents
         if specialist is not orchestrator
     ]
-    handoff_flows = [
-        (a > b, Handoff)
-        for a in agents
-        for b in agents
-        if a is not b
-    ]
+    handoff_flows = build_handoff_flows(agents, send_message_flows, Handoff)
 
     return Agency(
         *agents,

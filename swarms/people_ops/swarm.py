@@ -66,9 +66,11 @@ def create_agency(load_threads_callback=None) -> "Agency":
         reasoning="high",
     )
 
+    from swarms._common.comms import build_handoff_flows
+
     agents = [orch, policy_writer, scheduler, trainer, coach]
     send_message_flows = [(orch, a, SendMessage) for a in agents if a is not orch]
-    handoff_flows = [(a > b, Handoff) for a in agents for b in agents if a is not b]
+    handoff_flows = build_handoff_flows(agents, send_message_flows, Handoff)
 
     return Agency(
         *agents,

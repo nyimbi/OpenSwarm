@@ -53,7 +53,8 @@ def create_agency(load_threads_callback=None) -> "Agency":
 
     agents = [orch, strategist, copywriter, seo, editor]
     send_message_flows = [(orch, a, SendMessage) for a in agents if a is not orch]
-    handoff_flows = [(a > b, Handoff) for a in agents for b in agents if a is not b]
+    from swarms._common.comms import build_handoff_flows
+    handoff_flows = build_handoff_flows(agents, send_message_flows, Handoff)
 
     return Agency(
         *agents,
