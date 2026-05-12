@@ -172,3 +172,107 @@ def test_dispatch_propagates_factory_failure_as_error_string(monkeypatch):
     result = DispatchToSwarm(swarm="softdev", task="any task").run()
     assert "Failed to construct" in result
     assert "RuntimeError" in result
+
+
+# ── M6: dispatch audit log ────────────────────────────────────────────────
+
+
+def _read_audit_lines(log_path):
+    """Helper: parse the dispatch audit JSONL file into a list of dicts."""
+    import json
+
+    if not log_path.exists():
+        return []
+    return [json.loads(line) for line in log_path.read_text().splitlines() if line.strip()]
+
+
+def test_dispatch_writes_audit_log_on_unknown_swarm(monkeypatch, tmp_path):
+    """Refusals get logged too — auditing means knowing *which* dispatch
+    requests came in, not just the ones that succeeded."""
+    log = tmp_path / "dispatch.jsonl"
+    monkeypatch.setenv("OSWARM_DISPATCH_LOG", str(log))
+
+    DispatchToSwarm = _load_dispatch()
+    DispatchToSwarm(swarm="nope_not_real", task="hi there").run()
+
+    events = _read_audit_lines(log)
+    assert len(events) == 1
+    e = events[0]
+    assert e["swarm"] == "nope_not_real"
+    assert e["outcome"] == "refused"
+    assert e["reason"] == "unknown_swarm"
+    assert e["task_len"] == len("hi there")
+
+
+def test_dispatch_writes_audit_log_on_recursive_metaswarm(monkeypatch, tmp_path):
+    log = tmp_path / "dispatch.jsonl"
+    monkeypatch.setenv("OSWARM_DISPATCH_LOG", str(log))
+
+    DispatchToSwarm = _load_dispatch()
+    DispatchToSwarm(swarm="metaswarm", task="loop").run()
+
+    events = _read_audit_lines(log)
+    assert events[0]["outcome"] == "refused"
+    assert events[0]["reason"] == "recursive_metaswarm"
+
+
+def test_dispatch_writes_audit_log_on_factory_failure(monkeypatch, tmp_path):
+    log = tmp_path / "dispatch.jsonl"
+    monkeypatch.setenv("OSWARM_DISPATCH_LOG", str(log))
+
+    DispatchToSwarm = _load_dispatch()
+
+    def _boom(*a, **kw):
+        raise RuntimeError("construction blew up")
+
+    import swarms
+    monkeypatch.setitem(swarms.SWARMS, "softdev", (_boom, "stubbed"))
+
+    DispatchToSwarm(swarm="softdev", task="work").run()
+
+    events = _read_audit_lines(log)
+    assert events[0]["outcome"] == "construct_failed"
+    assert events[0]["error_type"] == "RuntimeError"
+    assert "elapsed_ms" in events[0]
+
+
+def test_dispatch_writes_audit_log_on_success(monkeypatch, tmp_path):
+    """A successful dispatch records outcome=success plus output length."""
+    log = tmp_path / "dispatch.jsonl"
+    monkeypatch.setenv("OSWARM_DISPATCH_LOG", str(log))
+
+    DispatchToSwarm = _load_dispatch()
+
+    class _Result:
+        final_output = "done"
+
+    class _FakeAgency:
+        def get_response_sync(self, _task):
+            return _Result()
+
+    import swarms
+    monkeypatch.setitem(swarms.SWARMS, "softdev", (lambda *a, **kw: _FakeAgency(), "fake"))
+
+    DispatchToSwarm(swarm="softdev", task="implement X").run()
+
+    events = _read_audit_lines(log)
+    assert events[0]["outcome"] == "success"
+    assert events[0]["task_len"] == len("implement X")
+    assert events[0]["output_len"] == len("done")
+    assert "elapsed_ms" in events[0]
+
+
+def test_dispatch_audit_failure_does_not_block_dispatch(monkeypatch, tmp_path):
+    """A failing audit write must not break the dispatch itself."""
+    log_dir = tmp_path / "readonly"
+    log_dir.mkdir()
+    # Point the override at a path whose parent we'll then make read-only
+    # but easier: point at a path under a file (so mkdir(parents=True) fails)
+    blocker = tmp_path / "blocker"
+    blocker.write_text("not a directory")
+    monkeypatch.setenv("OSWARM_DISPATCH_LOG", str(blocker / "child.jsonl"))
+
+    DispatchToSwarm = _load_dispatch()
+    result = DispatchToSwarm(swarm="nope_not_real", task="hi").run()
+    # Refusal text still surfaces despite audit write failure
+    assert "Unknown swarm" in result

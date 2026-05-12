@@ -153,6 +153,52 @@ def test_websearch_clamps_limit():
         WebSearch(query="x", limit=100)
 
 
+def test_websearch_passes_limit_to_searxng(monkeypatch):
+    """M4: WebSearch must pass `count=<limit>` to SearXNG so the upstream
+    can stop early instead of fetching its default per-engine cap and us
+    discarding the tail. The client-side slice still bounds the output."""
+    monkeypatch.setenv("SEARXNG_URL", "http://stub:8888")
+
+    captured: dict = {}
+
+    def fake_get(url, **kwargs):
+        captured["url"] = url
+        captured["params"] = kwargs.get("params", {})
+        return _make_response(200, {"results": [
+            {"title": f"r{i}", "url": f"https://e/{i}", "content": "x"}
+            for i in range(5)
+        ]})
+
+    import httpx
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+    WebSearch(query="x", limit=7).run()
+
+    assert captured["params"].get("count") == "7", (
+        f"WebSearch must send count={{limit}} to SearXNG; "
+        f"got params={captured['params']}"
+    )
+
+
+def test_websearch_clamps_results_when_upstream_returns_more(monkeypatch):
+    """Even with `count` sent upstream, the client-side slice must still
+    enforce the limit — SearXNG aggregates across engines and can exceed
+    its per-engine count when several reply at once."""
+    monkeypatch.setenv("SEARXNG_URL", "http://stub:8888")
+    _stub_httpx_get(
+        monkeypatch,
+        200,
+        {"results": [
+            {"title": f"r{i}", "url": f"https://e/{i}", "content": "x"}
+            for i in range(20)  # upstream returns 20, we asked for 3
+        ]},
+    )
+    out = WebSearch(query="x", limit=3).run()
+    # 3 numbered entries; never a 4th
+    assert "\n1. r0" in out and "\n3. r2" in out
+    assert "4. r3" not in out
+
+
 def test_webfetch_returns_markdown(monkeypatch):
     monkeypatch.setenv("FIRECRAWL_URL", "http://stub:3002")
     _stub_httpx_stream(

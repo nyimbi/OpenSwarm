@@ -62,8 +62,20 @@ class WebSearch(BaseTool):
     )
 
     def run(self) -> str:
+        # NOTE: SEARXNG_URL should be https in shared deployments — when
+        # the query body crosses a network boundary in plaintext, search
+        # terms (and any sensitive context an agent may have folded into
+        # them) leak to anything sniffing the link.
         base = os.environ.get("SEARXNG_URL", "http://localhost:8888").rstrip("/")
-        params: dict[str, str] = {"q": self.query, "format": "json"}
+        params: dict[str, str] = {
+            "q": self.query,
+            "format": "json",
+            # SearXNG's `count` is the per-engine result cap. Passing it
+            # in lets the upstream stop early instead of fetching its
+            # default 30+ per engine and us discarding the tail. The
+            # client-side slice below stays as a guarantee.
+            "count": str(self.limit),
+        }
         if self.time_range:
             params["time_range"] = self.time_range
         if self.engines:
@@ -90,6 +102,9 @@ class WebSearch(BaseTool):
         except ValueError:
             return f"SearXNG returned non-JSON content: {response.text[:200]}"
 
+        # Client-side clamp: SearXNG may still return more than `count`
+        # if aggregating multiple engines. The slice keeps the output
+        # bounded regardless of upstream behavior.
         results = data.get("results", [])[: self.limit]
         if not results:
             return f"No results for query: {self.query!r}"
