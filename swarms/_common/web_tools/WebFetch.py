@@ -6,11 +6,22 @@ Chromium browser with stealth patches.
 
 Configure via FIRECRAWL_URL env var. Defaults to http://localhost:3002.
 
-Hardening (Commit 3 of ralplan-fix-all-issues):
+Hardening (Commit 3 of ralplan-fix-all-issues + reviewer follow-up):
 - H1: SSRF guard. The target URL the agent passes in is resolved and
   rejected if it lands on a private/loopback/link-local/multicast/IMDS
   address. The Firecrawl endpoint itself stays unguarded — it commonly
   runs on a private network address.
+- H1 reviewer follow-up: DNS rebinding is mitigated by pinning the
+  hostname to its first safe-resolved address for the duration of the
+  request (monkeypatching `socket.getaddrinfo` inside a context
+  manager). Without this, a hostile authoritative resolver could
+  answer once with a public IP for the guard, then with 127.0.0.1 for
+  httpx's own resolution.
+- H1 reviewer follow-up: IPv6 zone IDs (`fe80::1%en0`) are stripped
+  before parsing; otherwise `ipaddress.ip_address` would raise and the
+  guard would `continue`, silently allowing the link-local address.
+- H1 reviewer follow-up: IPv4-mapped IPv6 forms of the IMDS address
+  (`::ffff:169.254.169.254`) are now caught.
 - H2: response is streamed; a bytes cap of `max_chars * 4` protects
   against pathologically large pages.
 - M7: split connect/read/write/pool timeouts so a slow body cannot
@@ -19,10 +30,12 @@ Hardening (Commit 3 of ralplan-fix-all-issues):
 
 from __future__ import annotations
 
+import contextlib
 import ipaddress
 import json
 import os
 import socket
+from typing import Iterator
 from urllib.parse import urlparse
 
 import httpx
@@ -37,14 +50,73 @@ from pydantic import Field
 _IMDS_ADDRESS = "169.254.169.254"
 
 
+def _canonical_ip(ip_str: str) -> ipaddress._BaseAddress | None:
+    """Parse `ip_str` into an ipaddress object, stripping IPv6 zone IDs.
+
+    IPv6 link-local addresses returned by getaddrinfo include the
+    interface zone (`fe80::1%en0`). `ipaddress.ip_address` raises on
+    that form, so the original guard silently dropped these.
+    """
+    bare = ip_str.split("%", 1)[0]
+    try:
+        return ipaddress.ip_address(bare)
+    except ValueError:
+        return None
+
+
+def _classify_address(ip: ipaddress._BaseAddress) -> str:
+    """Return a refusal-reason string if `ip` is non-public, else ""."""
+    # Unwrap IPv4-mapped IPv6 so the v4 classification rules apply
+    # (e.g. `::ffff:169.254.169.254` must still be caught as IMDS).
+    check = getattr(ip, "ipv4_mapped", None) or ip
+    if str(check) == _IMDS_ADDRESS:
+        return f"IMDS address {_IMDS_ADDRESS}"
+    if (
+        check.is_private
+        or check.is_loopback
+        or check.is_link_local
+        or check.is_reserved
+        or check.is_multicast
+        or check.is_unspecified
+    ):
+        return f"resolves to non-public address {check}"
+    return ""
+
+
+def _resolve_safe(host: str) -> tuple[str, str]:
+    """Resolve `host` and return (safe_ip, "") or ("", reason).
+
+    Walks every getaddrinfo entry and rejects on the first non-public
+    address. Returns the first safe IPv4/IPv6 literal so the caller can
+    pin DNS for the actual request — mitigating the DNS rebinding race
+    between the guard's resolution and httpx's.
+    """
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror as exc:
+        return "", f"DNS resolution failed: {exc}"
+
+    safe_ip = ""
+    for _f, _s, _p, _c, sockaddr in infos:
+        ip = _canonical_ip(sockaddr[0])
+        if ip is None:
+            continue
+        bad = _classify_address(ip)
+        if bad:
+            return "", bad
+        if not safe_ip:
+            safe_ip = sockaddr[0].split("%", 1)[0]
+
+    if not safe_ip:
+        return "", "no resolvable public addresses"
+    return safe_ip, ""
+
+
 def _is_safe_url(url: str) -> tuple[bool, str]:
     """Return (True, "") if the URL targets a public host, else (False, reason).
 
-    Resolves the hostname via getaddrinfo and inspects every returned
-    address — DNS rebinding tricks that return one address for the guard
-    and another for the actual request are mitigated because httpx is
-    given the original URL and goes through the same resolver, but the
-    guard already refuses if *any* resolved address is non-public.
+    This is the public surface preserved for compatibility — internal
+    callers prefer `_resolve_safe()` which also returns the pinned IP.
     """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):
@@ -52,31 +124,44 @@ def _is_safe_url(url: str) -> tuple[bool, str]:
     host = parsed.hostname
     if not host:
         return False, "no hostname"
-
-    try:
-        infos = socket.getaddrinfo(host, None)
-    except socket.gaierror as exc:
-        return False, f"DNS resolution failed: {exc}"
-
-    for family, _socktype, _proto, _canon, sockaddr in infos:
-        ip_str = sockaddr[0]
-        if ip_str == _IMDS_ADDRESS:
-            return False, f"IMDS address {_IMDS_ADDRESS}"
-        try:
-            ip = ipaddress.ip_address(ip_str)
-        except ValueError:
-            continue
-        if (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_reserved
-            or ip.is_multicast
-            or ip.is_unspecified
-        ):
-            return False, f"resolves to non-public address {ip}"
-
+    _ip, reason = _resolve_safe(host)
+    if reason:
+        return False, reason
     return True, ""
+
+
+@contextlib.contextmanager
+def _pin_dns(host: str, pinned_ip: str) -> Iterator[None]:
+    """Monkeypatch socket.getaddrinfo so any resolution of `host` returns
+    `pinned_ip` for the duration of the with-block.
+
+    This closes the DNS rebinding race: between the SSRF guard's
+    resolution and httpx's, a hostile authoritative resolver could
+    have flipped the answer from public IP to loopback. With the pin
+    in place, httpx sees exactly the address the guard already
+    validated.
+
+    Resolutions for any *other* hostname pass through to the real
+    resolver — Firecrawl traffic is unaffected.
+    """
+    original = socket.getaddrinfo
+
+    def pinned(h, port, *args, **kwargs):
+        if h == host:
+            # Prefer the right family for the pinned IP
+            try:
+                ip_obj = ipaddress.ip_address(pinned_ip)
+            except ValueError:
+                return original(h, port, *args, **kwargs)
+            family = socket.AF_INET6 if ip_obj.version == 6 else socket.AF_INET
+            return [(family, socket.SOCK_STREAM, 0, "", (pinned_ip, port or 0))]
+        return original(h, port, *args, **kwargs)
+
+    socket.getaddrinfo = pinned
+    try:
+        yield
+    finally:
+        socket.getaddrinfo = original
 
 
 class WebFetch(BaseTool):
@@ -123,8 +208,21 @@ class WebFetch(BaseTool):
     def run(self) -> str:
         # H1: SSRF guard runs first so a refused URL never touches the
         # Firecrawl endpoint at all.
-        ok, reason = _is_safe_url(self.url)
-        if not ok:
+        parsed = urlparse(self.url)
+        if parsed.scheme not in ("http", "https"):
+            return (
+                f"WebFetch refused {self.url}: target resolves to non-public "
+                f"address (only http/https allowed (got "
+                f"{parsed.scheme or 'no scheme'!r}))."
+            )
+        host = parsed.hostname
+        if not host:
+            return (
+                f"WebFetch refused {self.url}: target resolves to non-public "
+                f"address (no hostname)."
+            )
+        pinned_ip, reason = _resolve_safe(host)
+        if reason:
             return (
                 f"WebFetch refused {self.url}: target resolves to non-public "
                 f"address ({reason})."
@@ -153,20 +251,26 @@ class WebFetch(BaseTool):
         truncated_at_cap = False
         status_code: int | None = None
 
+        # H1 (DNS rebinding mitigation): pin the target hostname to the
+        # resolved-safe IP for the duration of the request. Firecrawl's
+        # own hostname is unaffected — the pin only intercepts lookups
+        # for `host`. The pin guarantees httpx sees exactly the address
+        # the guard already validated.
         try:
-            with httpx.stream(
-                "POST",
-                f"{base}/v1/scrape",
-                json=body,
-                timeout=timeout,
-            ) as response:
-                status_code = response.status_code
-                for chunk in response.iter_bytes():
-                    body_chunks.append(chunk)
-                    total += len(chunk)
-                    if total > byte_cap:
-                        truncated_at_cap = True
-                        break
+            with _pin_dns(host, pinned_ip):
+                with httpx.stream(
+                    "POST",
+                    f"{base}/v1/scrape",
+                    json=body,
+                    timeout=timeout,
+                ) as response:
+                    status_code = response.status_code
+                    for chunk in response.iter_bytes():
+                        body_chunks.append(chunk)
+                        total += len(chunk)
+                        if total > byte_cap:
+                            truncated_at_cap = True
+                            break
         except httpx.RequestError as exc:
             return (
                 f"Error reaching Firecrawl at {base}: {exc}. "

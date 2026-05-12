@@ -10,6 +10,7 @@ from __future__ import annotations
 import importlib
 import os
 import sys
+from pathlib import Path
 
 import pytest
 from dotenv import dotenv_values
@@ -275,3 +276,43 @@ def test_dispatch_audit_failure_does_not_block_dispatch(monkeypatch, tmp_path):
     result = DispatchToSwarm(swarm="nope_not_real", task="hi").run()
     # Refusal text still surfaces despite audit write failure
     assert "Unknown swarm" in result
+
+
+def test_dispatch_audit_log_path_traversal_falls_back_to_default(monkeypatch, tmp_path):
+    """Reviewer follow-up: OSWARM_DISPATCH_LOG=/etc/cron.d/... must not
+    actually write to /etc. The override is rejected and the default
+    path under cwd is used instead."""
+    # Move cwd somewhere isolated so the default-path fallback writes
+    # somewhere we can verify (and don't pollute the repo's .omc/).
+    monkeypatch.chdir(tmp_path)
+
+    # Pick a deliberately-out-of-bounds override
+    monkeypatch.setenv("OSWARM_DISPATCH_LOG", "/etc/cron.d/openswarm-pwn.jsonl")
+
+    DispatchToSwarm = _load_dispatch()
+    DispatchToSwarm(swarm="nope_not_real", task="hi").run()
+
+    # /etc was NOT written to (we'd have hit a permission error anyway,
+    # but the design contract is "fall back silently")
+    assert not (Path("/etc/cron.d/openswarm-pwn.jsonl").exists()), (
+        "OSWARM_DISPATCH_LOG with out-of-cwd path was honored — "
+        "path-traversal defense failed"
+    )
+
+    # The default path was used instead
+    default_path = tmp_path / ".omc" / "logs" / "dispatch.jsonl"
+    assert default_path.exists(), "fallback did not write to default path"
+
+
+def test_dispatch_audit_log_respects_cwd_subpath(monkeypatch, tmp_path):
+    """Override pointing INSIDE cwd is honored."""
+    monkeypatch.chdir(tmp_path)
+    override = tmp_path / "my-audit" / "dispatch.jsonl"
+    monkeypatch.setenv("OSWARM_DISPATCH_LOG", str(override))
+
+    DispatchToSwarm = _load_dispatch()
+    DispatchToSwarm(swarm="nope_not_real", task="hi").run()
+
+    assert override.exists(), (
+        "OSWARM_DISPATCH_LOG under cwd was wrongly rejected"
+    )

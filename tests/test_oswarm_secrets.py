@@ -84,6 +84,11 @@ def test_rejects_malformed_keys(line):
         "harmless;rm -rf /",
         "ok && evil",
         "ok || evil",
+        # Tab character — the launcher's `read` loop uses tab as its
+        # KEY/VALUE separator (IFS=$'\t'). A tab in VALUE would
+        # silently truncate the value and could let a second `=` field
+        # leak. Reject at the parser instead.
+        "ok\tINJECTED=evil",
     ],
 )
 def test_rejects_unsafe_value_substrings(value):

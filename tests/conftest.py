@@ -152,10 +152,14 @@ _install_agency_swarm_stubs()
 import pytest as _pytest
 
 
-@_pytest.fixture(autouse=True)
-def _restore_orchestrator_tools_class_bindings():
-    """Restore orchestrator.tools.{SwitchProvider,SwitchSwarm} to the
-    classes from __init__.py before every test."""
+def _pin_orchestrator_tools_classes() -> None:
+    """Pin orchestrator.tools.{SwitchProvider,SwitchSwarm} to the
+    classes from __init__.py. Used both as setup and teardown for the
+    autouse fixture below.
+
+    Best-effort — if the orchestrator package isn't importable in this
+    environment (e.g. the smoketest venv lacks dependencies), the
+    affected tests skip themselves, but the fixture must not fail."""
     try:
         import orchestrator.tools as _ot
         from orchestrator.tools.SwitchProvider import SwitchProvider as _SP
@@ -163,8 +167,18 @@ def _restore_orchestrator_tools_class_bindings():
         _ot.SwitchProvider = _SP
         _ot.SwitchSwarm = _SS
     except Exception:
-        # If the orchestrator package isn't importable in this environment
-        # (e.g. the smoketest venv lacks dependencies), let the affected
-        # tests skip themselves — don't fail the fixture.
         pass
+
+
+@_pytest.fixture(autouse=True)
+def _restore_orchestrator_tools_class_bindings():
+    """Restore orchestrator.tools.{SwitchProvider,SwitchSwarm} to the
+    classes from __init__.py before AND after every test.
+
+    The pre-yield pin handles the "previous test polluted this binding"
+    case. The post-yield pin handles the "this test polluted the
+    binding, and pytest's own machinery now wants to inspect it"
+    case — keeps the binding stable for test report generation."""
+    _pin_orchestrator_tools_classes()
     yield
+    _pin_orchestrator_tools_classes()

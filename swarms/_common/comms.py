@@ -50,12 +50,20 @@ def build_handoff_flows(
             sm_edges.add((id(sender), id(receiver)))
 
     flows: list[tuple] = []
+    # `seen` deduplicates handoff pairs in the unusual case that
+    # `agents` contains the same agent twice. Without it, the inner
+    # loop would emit duplicate `(a > b, Handoff)` tuples for those
+    # repeated identities, which the dual_comms patch rejects with
+    # "Duplicate communication tool class detected".
+    seen: set[tuple[int, int]] = set()
     for sender in agents:
         for receiver in agents:
             if sender is receiver:
                 continue
-            if (id(sender), id(receiver)) in sm_edges:
+            edge = (id(sender), id(receiver))
+            if edge in sm_edges or edge in seen:
                 continue
+            seen.add(edge)
             flows.append((sender > receiver, handoff_tool_class))
     return flows
 

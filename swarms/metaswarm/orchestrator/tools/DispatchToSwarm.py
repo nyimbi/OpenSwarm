@@ -25,17 +25,54 @@ from agency_swarm.tools import BaseTool
 from pydantic import Field
 
 
+_DEFAULT_AUDIT_PATH = Path(".omc") / "logs" / "dispatch.jsonl"
+
+
 def _audit_path() -> Path:
     """Resolve the dispatch-audit log path.
 
     Override via OSWARM_DISPATCH_LOG for tests or alternative layouts.
     Defaults to `.omc/logs/dispatch.jsonl` under the current working
     directory (which is the repo root when launched via `bin/oswarm`).
+
+    Path-traversal defense: the override must resolve under either
+    the current working directory or the system temp directory.
+    Anything else (`/etc/cron.d/...`, `/home/other-user/...`, etc.)
+    falls back to the default. This prevents a hostile env var from
+    corrupting privileged files when the launcher happens to run
+    with elevated permissions. The system-temp escape hatch keeps
+    `pytest`'s `tmp_path`-based fixtures working.
     """
     override = os.environ.get("OSWARM_DISPATCH_LOG")
-    if override:
-        return Path(override)
-    return Path(".omc") / "logs" / "dispatch.jsonl"
+    if not override:
+        return _DEFAULT_AUDIT_PATH
+
+    try:
+        candidate = Path(override).resolve()
+    except OSError:
+        return _DEFAULT_AUDIT_PATH
+
+    allowed_roots = [Path.cwd().resolve()]
+    try:
+        import tempfile
+        allowed_roots.append(Path(tempfile.gettempdir()).resolve())
+    except OSError:
+        pass
+    # macOS aliases /var/folders/... — resolve covers it; also accept
+    # /private/var which is the real backing path.
+    if Path("/private/var").exists():
+        try:
+            allowed_roots.append(Path("/private/var").resolve())
+        except OSError:
+            pass
+
+    for root in allowed_roots:
+        try:
+            candidate.relative_to(root)
+            return candidate
+        except ValueError:
+            continue
+    return _DEFAULT_AUDIT_PATH
 
 
 def _write_audit_event(event: dict) -> None:

@@ -332,6 +332,120 @@ def test_webfetch_ssrf_refuses_url_with_no_host(monkeypatch):
     assert "refused" in out
 
 
+def test_webfetch_ssrf_blocks_ipv6_link_local_with_zone_id(monkeypatch):
+    """IPv6 link-local addresses arrive from getaddrinfo with a zone ID
+    suffix (`fe80::1%en0`). `ipaddress.ip_address` raises on that form,
+    so the original guard silently dropped the entry on `continue` —
+    the address was treated as safe. The reviewer-followup fix strips
+    the zone ID before parsing."""
+    import socket
+
+    monkeypatch.setattr(
+        socket,
+        "getaddrinfo",
+        lambda host, port, *a, **kw: [
+            (socket.AF_INET6, socket.SOCK_STREAM, 0, "", ("fe80::1%en0", port or 0, 0, 0))
+        ],
+    )
+
+    import httpx
+    monkeypatch.setattr(httpx, "stream", lambda *a, **kw: (_ for _ in ()).throw(
+        AssertionError("SSRF guard let through fe80:: link-local")
+    ))
+
+    out = WebFetch(url="https://attacker.example/").run()
+    assert "refused" in out
+    assert "fe80" in out or "link-local" in out or "non-public" in out
+
+
+def test_webfetch_ssrf_blocks_ipv4_mapped_imds(monkeypatch):
+    """`::ffff:169.254.169.254` is the same address as 169.254.169.254
+    but the string-equality check used in the first pass missed it."""
+    import socket
+
+    monkeypatch.setattr(
+        socket,
+        "getaddrinfo",
+        lambda host, port, *a, **kw: [
+            (socket.AF_INET6, socket.SOCK_STREAM, 0, "",
+             ("::ffff:169.254.169.254", port or 0, 0, 0))
+        ],
+    )
+
+    import httpx
+    monkeypatch.setattr(httpx, "stream", lambda *a, **kw: (_ for _ in ()).throw(
+        AssertionError("SSRF guard let through IPv4-mapped IMDS")
+    ))
+
+    out = WebFetch(url="https://attacker.example/").run()
+    assert "refused" in out
+    assert "IMDS" in out or "169.254.169.254" in out
+
+
+def test_webfetch_pins_dns_for_request(monkeypatch):
+    """The DNS-rebinding mitigation: after the guard validates the
+    target host, any further `socket.getaddrinfo(host)` call (e.g.
+    from httpx during connection setup) must return the pinned IP,
+    not whatever the resolver feels like answering on second look."""
+    import socket
+
+    original_getaddrinfo = socket.getaddrinfo
+    safe_ip = "93.184.216.34"
+    call_count = {"n": 0}
+
+    def flipping_resolver(host, port, *a, **kw):
+        call_count["n"] += 1
+        if call_count["n"] == 1:
+            # Pretend the guard's first lookup returns the public IP
+            return [(socket.AF_INET, socket.SOCK_STREAM, 0, "", (safe_ip, port or 0))]
+        # On every subsequent lookup, the malicious resolver returns loopback
+        return [(socket.AF_INET, socket.SOCK_STREAM, 0, "", ("127.0.0.1", port or 0))]
+
+    monkeypatch.setattr(socket, "getaddrinfo", flipping_resolver)
+
+    # Capture what httpx sees when it resolves
+    seen_addrs: list[str] = []
+    import httpx
+
+    def stream(*_a, **_kw):
+        # Simulate httpx's own DNS resolution inside its connection step
+        infos = socket.getaddrinfo("attacker.example", 443)
+        seen_addrs.append(infos[0][4][0])
+
+        class _CM:
+            status_code = 200
+
+            def __enter__(self_inner):
+                return self_inner
+
+            def __exit__(self_inner, *exc):
+                return False
+
+            def iter_bytes(self_inner):
+                yield json.dumps({
+                    "success": True,
+                    "data": {
+                        "markdown": "ok",
+                        "metadata": {"sourceURL": "https://attacker.example"},
+                    },
+                }).encode()
+
+        return _CM()
+
+    monkeypatch.setattr(httpx, "stream", stream)
+
+    WebFetch(url="https://attacker.example/").run()
+
+    socket.getaddrinfo = original_getaddrinfo
+
+    # Without pinning, the second resolution would return 127.0.0.1.
+    # With pinning, httpx sees the safe IP the guard already validated.
+    assert seen_addrs == [safe_ip], (
+        f"DNS rebinding mitigation failed — httpx saw {seen_addrs}, "
+        f"expected pinned IP {safe_ip!r}"
+    )
+
+
 def test_webfetch_firecrawl_localhost_allowed(monkeypatch):
     """The SSRF guard inspects the *target* URL — Firecrawl itself
     typically lives at localhost:3002 and must not be blocked."""

@@ -26,7 +26,11 @@ import sys
 from collections.abc import Iterable, Iterator
 
 _KEY_PATTERN = re.compile(r"^[A-Z_][A-Z0-9_]*$")
-_UNSAFE_SUBSTRINGS = (";", "`", "$(", "&&", "||", "\n", "\r")
+# `\t` is in the list because the launcher's read loop uses tab as the
+# KEY/VALUE separator (`IFS=$'\t' read -r k v`). A literal tab inside
+# VALUE would corrupt that demarcation and silently truncate the value
+# at the first embedded tab.
+_UNSAFE_SUBSTRINGS = (";", "`", "$(", "&&", "||", "\n", "\r", "\t")
 
 
 def parse_secrets(lines: Iterable[str]) -> Iterator[tuple[str, str]]:
