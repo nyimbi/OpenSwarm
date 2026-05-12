@@ -17,7 +17,7 @@ def create_agency(load_threads_callback=None) -> "Agency":
     from swarms._common.agent_factory import make_agent
     from swarms._common.file_ops import ReadFile, WriteFile, EditFile, ListDir
     from swarms._common.web_tools import WebSearch, WebFetch
-    from swarms.softdev.shared_tools import GitDiff
+    from swarms._common.git_tools import GitDiff
 
     orch = make_agent(
         "Orchestrator",

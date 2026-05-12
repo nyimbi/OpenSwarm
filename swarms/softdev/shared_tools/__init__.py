@@ -1,18 +1,18 @@
 """Tools shared across SoftDev's eight agents.
 
-Lightweight wrappers around `git` and a project-test command, kept here
-rather than under shared_tools/ at the repo root because they're scoped
-to software-development workflows. Other swarms shouldn't import these.
+The git tools live under `swarms/_common/git_tools/` and the file-op
+tools live under `swarms/_common/file_ops.py` because more than one
+swarm needs them — they're re-exported from here so softdev agents can
+keep the single `from swarms.softdev.shared_tools import ...` import
+shape that's used across this swarm's eight agents.
+
+RunTests stays here because it's specific to software-development
+workflows (it wraps the project's test runner).
 """
 
-from swarms.softdev.shared_tools.GitStatus import GitStatus
-from swarms.softdev.shared_tools.GitDiff import GitDiff
-from swarms.softdev.shared_tools.GitLog import GitLog
+from swarms._common.git_tools import GitDiff, GitLog, GitStatus
+from swarms._common.file_ops import ReadFile, WriteFile, EditFile, ListDir
 from swarms.softdev.shared_tools.RunTests import RunTests
-from swarms.softdev.shared_tools.ReadFile import ReadFile
-from swarms.softdev.shared_tools.WriteFile import WriteFile
-from swarms.softdev.shared_tools.EditFile import EditFile
-from swarms.softdev.shared_tools.ListDir import ListDir
 
 __all__ = [
     "GitStatus", "GitDiff", "GitLog", "RunTests",

@@ -3,7 +3,7 @@
 from agency_swarm.tools import BaseTool
 from pydantic import Field
 
-from swarms.softdev.shared_tools._git import run_git
+from swarms._common.git_tools._git import run_git
 
 
 class GitDiff(BaseTool):
