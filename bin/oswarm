@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # oswarm — personal launcher for the local OpenSwarm fork.
 #
-# Sources secrets, bridges shell env-var conventions (AZURE_OPENAI_*) to
-# OpenSwarm's LiteLLM-style names (AZURE_*), points web tools at the
-# connectors server, and runs swarm.py / server.py from the repo root.
+# Sources secrets (via a strict KEY=VALUE parser, NOT raw `source`),
+# bridges shell env-var conventions (AZURE_OPENAI_*) to OpenSwarm's
+# LiteLLM-style names (AZURE_*), points web tools at the connectors
+# server, and runs swarm.py / server.py from the repo root.
 #
 # Symlinked to ~/.local/bin/oswarm so it works from any directory.
 #
@@ -13,6 +14,9 @@
 #   oswarm list                  list registered swarms with descriptions
 #   oswarm server                FastAPI mode (every swarm at its own URL)
 #   oswarm help                  show this usage
+#
+# Env knobs:
+#   OSWARM_SKIP_PROBE=1          skip the SearXNG / Firecrawl reachability check
 
 set -euo pipefail
 
@@ -26,11 +30,18 @@ REPO_ROOT="$(cd "$(dirname "$SCRIPT")/.." && pwd)"
 
 cd "$REPO_ROOT"
 
-# 1. Source secrets if present
+# 1. Strict-parse secrets if present.
+#
+# Historically this was `source "$SECRETS"`, which evaluated whatever
+# bash syntax was inside the file (including command substitutions).
+# The parser at swarms/_common/secrets_parser.py accepts only
+# `KEY=VALUE` lines with KEY in uppercase-identifier shape and VALUE
+# free of `;`, backticks, `$(`, `&&`, `||`, newlines.
 SECRETS="${HOME}/.config/secrets/api_keys.env"
 if [[ -f "$SECRETS" ]]; then
-  # shellcheck disable=SC1090
-  source "$SECRETS"
+  while IFS=$'\t' read -r _key _value; do
+    [[ -n "$_key" ]] && export "$_key=$_value"
+  done < <(python3 "${REPO_ROOT}/swarms/_common/secrets_parser.py" "$SECRETS")
 fi
 
 # 2. Bridge env-var naming conventions
@@ -47,15 +58,31 @@ fi
 # Default model (override via DEFAULT_MODEL env or in-session SwitchProvider)
 export DEFAULT_MODEL="${DEFAULT_MODEL:-azure/gpt-4o}"
 
-# Connectors server (SearXNG + Firecrawl) for WebSearch + WebFetch tools
-export SEARXNG_URL="${SEARXNG_URL:-http://84.247.181.100:8888}"
-export FIRECRAWL_URL="${FIRECRAWL_URL:-http://84.247.181.100:3002}"
+# Connectors server (SearXNG + Firecrawl) for WebSearch + WebFetch tools.
+# Defaults assume the same machine; override with SEARXNG_URL / FIRECRAWL_URL
+# for shared infra. The hard-coded private IP that used to live here moved
+# to user environment in fix-all-issues Commit 5 (H4).
+export SEARXNG_URL="${SEARXNG_URL:-http://localhost:8888}"
+export FIRECRAWL_URL="${FIRECRAWL_URL:-http://localhost:3002}"
 
-# 3. Dispatch
+# 3. Connectivity probe — warn (don't fail) if the web-tool endpoints
+#    aren't responding. Two-second timeout each. Gate via OSWARM_SKIP_PROBE=1.
+if [[ "${OSWARM_SKIP_PROBE:-0}" != "1" ]]; then
+  if command -v curl >/dev/null 2>&1; then
+    if ! curl -sf --max-time 2 "${SEARXNG_URL}/healthz" >/dev/null 2>&1; then
+      echo "oswarm: warning — SearXNG at ${SEARXNG_URL} did not respond. WebSearch will fail until it does. Set OSWARM_SKIP_PROBE=1 to silence." >&2
+    fi
+    if ! curl -sf --max-time 2 "${FIRECRAWL_URL}/health" >/dev/null 2>&1; then
+      echo "oswarm: warning — Firecrawl at ${FIRECRAWL_URL} did not respond. WebFetch will fail until it does. Set OSWARM_SKIP_PROBE=1 to silence." >&2
+    fi
+  fi
+fi
+
+# 4. Dispatch
 ARG="${1:-}"
 case "$ARG" in
   help|--help|-h)
-    sed -n '2,15p' "$SCRIPT"
+    sed -n '2,19p' "$SCRIPT"
     ;;
   server)
     echo "Launching FastAPI on :8080. All swarms exposed at /<slug>/..."
