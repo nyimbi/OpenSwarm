@@ -80,8 +80,6 @@ def test_swarm_factory_constructs(slug):
     proposals is the one known-failing case (no swarm.py) and is xfailed
     until Commit 2 of the fix-all-issues plan lands.
     """
-    if slug == "proposals":
-        pytest.xfail("C1 fix pending — proposals/swarm.py not yet created")
     if slug == "openswarm":
         pytest.importorskip("composio", reason="openswarm requires Composio integrations")
 
@@ -105,8 +103,6 @@ def test_swarm_factory_constructs(slug):
 @pytest.mark.parametrize("slug", _all_slugs())
 def test_swarm_factory_agent_count_matches_manifest(slug):
     """Regression anchor: any silent loss/addition of agents fails here."""
-    if slug == "proposals":
-        pytest.xfail("C1 fix pending")
     if slug == "openswarm":
         pytest.importorskip("composio", reason="openswarm requires Composio integrations")
     from swarms import get_factory
@@ -127,8 +123,6 @@ def test_swarm_shared_instructions_loaded(slug):
 
     Catches typo'd path arguments to Agency(shared_instructions=...).
     """
-    if slug == "proposals":
-        pytest.xfail("C1 fix pending")
     if slug == "openswarm":
         pytest.importorskip("composio", reason="openswarm requires Composio integrations")
     from swarms import get_factory
@@ -152,8 +146,6 @@ def test_swarm_every_agent_has_some_tools_or_is_orchestrator(slug):
     Orchestrator gets a pass since its tools are typically empty by design
     (it routes, doesn't execute) or has only [SwitchProvider, SwitchSwarm].
     """
-    if slug == "proposals":
-        pytest.xfail("C1 fix pending")
     if slug == "openswarm":
         pytest.importorskip("composio", reason="openswarm requires Composio integrations")
     from swarms import get_factory

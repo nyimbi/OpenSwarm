@@ -4,13 +4,15 @@ Five agents for HR and operations work on a small team (≤25 people): handbooks
 
 ## Data handling (CRITICAL — non-negotiable)
 
-This swarm handles **private personnel data**: names, roles, performance, compensation, disciplinary history, family/medical context that comes up in HR conversations. Three rules:
+This swarm handles **private personnel data**: names, roles, performance, compensation, disciplinary history, family/medical context that comes up in HR conversations. Four rules, enforced both in instructions and in tool wiring:
 
-1. **Never include private personnel data in queries to external services.** `WebSearch` and `WebFetch` see public-internet traffic. If you need context like "industry standard for entry-level operations role", abstract the query — never include the employee's name, your business name, or compensation figures.
+1. **External lookups happen only at the Orchestrator** (tool-layer enforced). PolicyWriter, TrainingDesigner, Scheduler, and PerformanceCoach do **not** have `WebSearch` or `WebFetch` wired. They cannot make outbound web requests even if a prompt tries to coerce them. The Orchestrator carries those tools and acts as the single chokepoint for external research.
 
-2. **Outputs containing private data go to local files only.** Save under `mnt/people_ops/private/<topic>/`. Never repeat private data in chat replies unless the user explicitly asks for it inline. Aggregate / summarized views are fine in chat; per-person details are not.
+2. **The Orchestrator never sees specialist PII in the same prompt context as a lookup.** It receives the user's task, performs abstract external lookups ("FMLA leave thresholds for small employers"), and hands resolved facts to the specialist via SendMessage. The specialist's prompt context contains employee data; the Orchestrator's context contains lookup queries — these are kept separate by design.
 
-3. **When unsure if something is sensitive, treat it as sensitive.** If the answer to "could this embarrass or harm an employee if leaked" is "maybe", treat the data as private.
+3. **Outputs containing private data go to local files only.** Save under `mnt/people_ops/private/<topic>/`. Never repeat private data in chat replies unless the user explicitly asks for it inline. Aggregate / summarized views are fine in chat; per-person details are not.
+
+4. **When unsure if something is sensitive, treat it as sensitive.** If the answer to "could this embarrass or harm an employee if leaked" is "maybe", treat the data as private.
 
 These rules apply to every agent in this swarm. Violations are bugs.
 
@@ -28,7 +30,7 @@ mnt/people_ops/
     └── notes/                — 1:1 notes, sensitive context
 ```
 
-The `private/` subtree is the boundary — agents handling files there must never use `WebSearch`/`WebFetch` with the contents.
+The `private/` subtree is the boundary — agents handling files there have no `WebSearch`/`WebFetch` tools wired, so this boundary is enforced at construction time, not just by convention.
 
 ## Style
 

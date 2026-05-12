@@ -11,6 +11,10 @@ from pydantic import ValidationError
 # Import the module explicitly to avoid the shadowing in
 # orchestrator/tools/__init__.py, which re-exports the SwitchProvider
 # *class* under the same dotted path as the submodule.
+#
+# Cross-test pollution from this layout is handled by the autouse
+# `_restore_orchestrator_tools_class_bindings` fixture in conftest.py —
+# it re-pins the class bindings before every test.
 sp_module = importlib.import_module("orchestrator.tools.SwitchProvider")
 SwitchProvider = sp_module.SwitchProvider
 
@@ -43,6 +47,29 @@ def clear_provider_env(monkeypatch):
         "OLLAMA_API_BASE",
     ):
         monkeypatch.delenv(var, raising=False)
+
+
+@pytest.fixture(autouse=True)
+def restore_os_environ():
+    """Snapshot os.environ and restore on teardown.
+
+    SwitchProvider.run() calls load_dotenv(override=True), which mutates
+    os.environ directly — outside monkeypatch.setenv's tracking. Without
+    this snapshot, DEFAULT_MODEL=openai_compat/... leaks into downstream
+    tests (e.g. test_swarm_factories) and breaks agency construction
+    because OPENAI_COMPAT_API_BASE is no longer set.
+    """
+    snapshot = dict(os.environ)
+    try:
+        yield
+    finally:
+        # Restore exactly: delete keys added during the test, reset
+        # values for keys that existed pre-test.
+        for key in list(os.environ):
+            if key not in snapshot:
+                del os.environ[key]
+        for key, value in snapshot.items():
+            os.environ[key] = value
 
 
 def test_unknown_provider_returns_supported_list(env_path, flag_path):

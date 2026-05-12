@@ -130,3 +130,41 @@ def _install_agency_swarm_stubs() -> None:
 
 
 _install_agency_swarm_stubs()
+
+
+# ── orchestrator.tools class-vs-submodule shadowing ─────────────────────────
+#
+# orchestrator/tools/__init__.py exports `SwitchProvider` and `SwitchSwarm`
+# *classes* under the same dotted path as the submodules that define them:
+#
+#     orchestrator.tools.SwitchProvider  -> SwitchProvider class
+#     orchestrator/tools/SwitchProvider.py defines class SwitchProvider
+#
+# Several tests pop the submodule from sys.modules and re-import it so they
+# can monkeypatch module-level ENV_PATH for a tmpdir. Python's import
+# machinery rebinds the package attribute to the submodule on that re-load,
+# overwriting the class. The next agency factory in the suite that does
+# `from orchestrator.tools import SwitchProvider` then receives the
+# submodule, and agency-swarm rejects it with "Tool 'module' is not a
+# supported tool".
+#
+# Fix: snapshot the class bindings and restore them before every test.
+import pytest as _pytest
+
+
+@_pytest.fixture(autouse=True)
+def _restore_orchestrator_tools_class_bindings():
+    """Restore orchestrator.tools.{SwitchProvider,SwitchSwarm} to the
+    classes from __init__.py before every test."""
+    try:
+        import orchestrator.tools as _ot
+        from orchestrator.tools.SwitchProvider import SwitchProvider as _SP
+        from orchestrator.tools.SwitchSwarm import SwitchSwarm as _SS
+        _ot.SwitchProvider = _SP
+        _ot.SwitchSwarm = _SS
+    except Exception:
+        # If the orchestrator package isn't importable in this environment
+        # (e.g. the smoketest venv lacks dependencies), let the affected
+        # tests skip themselves — don't fail the fixture.
+        pass
+    yield
