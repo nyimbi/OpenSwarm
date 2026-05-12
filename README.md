@@ -2,7 +2,7 @@
 
 A fork of [VRSEN/OpenSwarm](https://github.com/VRSEN/openswarm) built around three changes that mattered for a small business owning its own infrastructure:
 
-- **15 specialized swarms** (78 agents total) — from software engineering to meeting prep to finance — instead of one general-purpose team.
+- **15 specialized swarms** (74 agents total) — from software engineering to meeting prep to finance — instead of one general-purpose team.
 - **7 LLM providers** with runtime switching (Azure OpenAI, Azure AI Foundry/Claude, Anthropic, Google, OpenAI, Ollama local, OpenAI-compatible).
 - **Self-hosted search and scraping** wired in (SearXNG + Firecrawl) — works on every provider, not just OpenAI's hosted Responses API.
 

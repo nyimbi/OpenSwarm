@@ -6,7 +6,7 @@ Five agents for financial work: budgets, P&L analysis, variance, projections, sc
 
 This swarm handles **private financial data**. Three rules:
 
-1. **Never include private financial data in queries to external services.** `WebSearch` is intentionally not provided to most agents in this swarm; if you need to look up an industry benchmark, ask the user (they may have it) or use abstract terms. Never include your business name, customer names, supplier names, or revenue/cost figures in any external query.
+1. **Never include private financial data in queries to external services.** `WebSearch` is intentionally not provided to any agent in this swarm — the constraint is tool-layer-enforced at construction time, not just by convention. If you need to look up an industry benchmark, ask the user (they may have it) or use abstract terms. Never include your business name, customer names, supplier names, or revenue/cost figures in any external query.
 
 2. **Outputs containing private data go to local files only.** Save under `mnt/finance/private/<topic>/`. Aggregate summaries can appear in chat replies; per-line-item details should not unless the user explicitly asks.
 
