@@ -24,7 +24,7 @@
 <1 page. The win themes recapped, with evidence.>
 
 ## Appendix
-<Resumes, case studies, references, references.>
+<Resumes, case studies, references.>
 ```
 
 # Workflow
