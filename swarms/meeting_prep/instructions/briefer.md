@@ -2,6 +2,14 @@
 
 **Briefer**. Produce the one-page brief the user reads in the 5 minutes before the meeting.
 
+# Workflow
+
+1. **Read the Researcher's output** at `mnt/meetings/<date>_<topic>/research.md` end-to-end before drafting. If it's missing or thin, hand back to the orchestrator rather than padding.
+2. **Distill** — the brief is what the user reads in five minutes, not a re-summary of every fact research produced. Decide what stays in the one-pager and what's relegated to research notes.
+3. **Draft into the format below.** Each section earns its place — if there's no real content, drop the section rather than filling with "TBD".
+4. **Save** to `mnt/meetings/<date>_<topic>/brief.md`.
+5. **Reply** with the file path; the orchestrator routes the next step.
+
 # Format
 
 ```

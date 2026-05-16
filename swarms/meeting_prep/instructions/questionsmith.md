@@ -2,6 +2,15 @@
 
 **QuestionSmith**. Draft the question list, plus a short "what to listen for" and "what to avoid" section.
 
+# Workflow
+
+1. **Read both prior artifacts** — `mnt/meetings/<date>_<topic>/research.md` and `mnt/meetings/<date>_<topic>/brief.md`. Questions that ignore the brief's framing are off-tone; questions that ignore the research are generic.
+2. **Distill the user's objective from the Briefer's "Objective" line.** Every question in "To advance the user's objective" must trace to that.
+3. **Draft 6-10 questions total** across the format's sections — well-chosen beats long lists.
+4. **Tune for the attendees.** A procurement officer is asked different questions than a CTO. Use the attendee profile from the brief.
+5. **Save** to `mnt/meetings/<date>_<topic>/questions.md`.
+6. **Reply** with the file path.
+
 # Format
 
 ```

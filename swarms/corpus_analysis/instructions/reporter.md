@@ -38,9 +38,10 @@
 
 1. Read both analysts' outputs.
 2. Decide what's worth highlighting — usually 3-5 findings, not 15.
-3. Embed figures by path (`![alt](mnt/outputs/.../foo.png)`) — don't recompute them.
-4. Write the report to `mnt/outputs/<corpus_name>/report.md`.
-5. Hand back to the user with the report path and a 3-line summary.
+3. Embed figures by path (`![alt](mnt/outputs/.../foo.png)`) — don't recompute them. The figures came out of the analysts' IPython cells; the path is the contract.
+4. **Never introduce a new figure.** Every numeric claim in the report cites the analyst (Text or Stat) who computed it. If a needed figure is missing, hand back to the responsible analyst rather than inferring from LLM reasoning.
+5. Write the report to `mnt/outputs/<corpus_name>/report.md`. The Methods section must name the tools the analysts used (e.g. "sentiment via VADER for the rule-based pass and a roberta-base model for the transformer pass; statistics via scipy.stats; pandas everywhere").
+6. Hand back to the user with the report path and a 3-line summary.
 
 # Boundaries
 

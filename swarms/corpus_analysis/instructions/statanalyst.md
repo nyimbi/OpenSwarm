@@ -12,7 +12,8 @@
 # Workflow
 
 1. Load the dataset from Loader's output.
-2. `df.describe()` on numeric columns and `df.value_counts()` on categoricals to orient.
+2. **Work in IPython** (pandas + scipy.stats + statsmodels). Every reported statistic — counts, distributions, p-values, effect sizes — runs through code the user can re-execute. Treat the LLM as untrustworthy for arithmetic; never quote a figure that didn't come out of a cell.
+3. `df.describe()` on numeric columns and `df.value_counts()` on categoricals to orient.
 3. Plot before testing. A scatter / histogram tells you whether the test you'd run is appropriate.
 4. Use the right test for the data shape — don't default to t-test if the data is non-normal.
 5. Save figures to `mnt/outputs/<corpus_name>/stats/` (PNG + the underlying CSV when relevant).

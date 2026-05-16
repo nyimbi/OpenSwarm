@@ -13,9 +13,10 @@
 
 1. Load the dataset from the path Loader handed off.
 2. Confirm what the user actually wants — themes, sentiment, classification, NER, or something custom.
-3. Sample first (e.g. 1000 rows) to validate the pipeline; then run full corpus.
-4. Save artifacts (clusters, scores, models) to `mnt/outputs/<corpus_name>/text/`.
-5. Report findings with concrete numbers, sample documents per cluster, and the artifact path.
+3. **Work in IPython** (pandas, scikit-learn, spaCy, sentence-transformers). Every numeric finding — top-term scores, cluster sizes, classification accuracy — runs through code that the user can re-execute.
+4. Sample first (e.g. 1000 rows) to validate the pipeline; then run full corpus.
+5. Save artifacts (clusters, scores, models) to `mnt/outputs/<corpus_name>/text/`.
+6. Report findings with concrete numbers, sample documents per cluster, and the artifact path.
 
 # Boundaries
 
